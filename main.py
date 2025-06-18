@@ -35,14 +35,15 @@ def main():
         "https://www.nps.gov/mora/planyourvisit/trails-and-backcountry-camp-conditions.htm")
     bs = BeautifulSoup(res.content, features="html.parser")
     row = bs.find("td", string=trail_name)
-    row = row.next_sibling.next_sibling
-    snow_cover_pct = row.text
-    row = row.next_sibling.next_sibling
-    trail_conditions = row.text
-    row = row.next_sibling.next_sibling
-    updated_at = row.text
-    status_string = f"{trail_name}: {snow_cover_pct}% snow cover, {trail_conditions}. Last updated {updated_at}."
-    send_notification(status_string)
+    if row:
+        cells = row.parent.find_all("td")
+        snow_cover_pct = cells[1].text.strip()
+        trail_conditions = cells[2].text.strip()
+        updated_at = cells[3].text.strip()
+        status_string = f"{trail_name}: {snow_cover_pct}% snow cover, {trail_conditions}. Last updated {updated_at}."
+        send_notification(status_string)
+    else:
+        print(f"Trail '{trail_name}' not found.")
 
 
 if __name__ == "__main__":
