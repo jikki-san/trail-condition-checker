@@ -1,15 +1,18 @@
+import os
+import smtplib
+from email.mime.text import MIMEText
+
+import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from email.mime.text import MIMEText
-import os
-import requests
-import smtplib
 
 
 def send_notification(notification_msg: str):
     notification_phone = os.environ.get("NOTIFICATION_PHONE_NUMBER")
     from_email = os.environ.get("FROM_EMAIL")
     app_pw = os.environ.get("FROM_EMAIL_APP_PW")
+    if not all([notification_phone, from_email, app_pw]):
+        raise ValueError("Missing one or more required environment variables.")
 
     to_number = f"{notification_phone}@vtext.com"
 
@@ -19,11 +22,13 @@ def send_notification(notification_msg: str):
     msg["To"] = to_number
     msg["Subject"] = ""  # SMS doesn't need a subject
 
-    # Send the email (SMS)
-    with smtplib.SMTP("smtp.gmail.com", 587) as server:
-        server.starttls()
-        server.login(from_email, app_pw)
-        server.sendmail(from_email, to_number, msg.as_string())
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(from_email, app_pw)
+            server.sendmail(from_email, to_number, msg.as_string())
+    except Exception as e:
+        print(f"Failed to send message: {e}")
 
     print("Message sent!")
 
