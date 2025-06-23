@@ -1,3 +1,4 @@
+import json
 import os
 import smtplib
 from email.mime.text import MIMEText
@@ -9,28 +10,27 @@ from dotenv import load_dotenv
 
 def send_notification(notification_msg: str):
     notification_phone = os.environ.get("NOTIFICATION_PHONE_NUMBER")
-    from_email = os.environ.get("FROM_EMAIL")
-    app_pw = os.environ.get("FROM_EMAIL_APP_PW")
-    if not all([notification_phone, from_email, app_pw]):
+    relay_url = os.environ.get("RELAY_URL")
+    if not notification_phone:
         raise ValueError("Missing one or more required environment variables.")
 
-    to_number = f"{notification_phone}@vtext.com"
-
-    # Create the message
-    msg = MIMEText(notification_msg)
-    msg["From"] = from_email
-    msg["To"] = to_number
-    msg["Subject"] = ""  # SMS doesn't need a subject
+    body = {
+        "from_service": "trail-condition-checker",
+        "notification_type": "sms",
+        "to_number": notification_phone,
+        "number_provider_url": "vtext.com",
+        "message": notification_msg
+    }
 
     try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
-            server.starttls()
-            server.login(from_email, app_pw)
-            server.sendmail(from_email, to_number, msg.as_string())
+        res = requests.post(relay_url, json=body)
+        res_body = res.json()
+        if res_body["sent"] == True:
+            print("Message sent!")
+        else:
+            print("Message failed to send.")
     except Exception as e:
         print(f"Failed to send message: {e}")
-
-    print("Message sent!")
 
 
 def main():
